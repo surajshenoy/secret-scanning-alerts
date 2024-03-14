@@ -14,8 +14,3 @@ inputs:
 runs:
   using: 'docker'
   image: 'Dockerfile'
-  env:
-    INPUT_ORG_NAME: ${{ inputs.org_name }}
-    INPUT_REPO_NAME: ${{ inputs.repo_name }}
-    INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
-    GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
