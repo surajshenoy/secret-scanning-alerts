@@ -1,5 +1,5 @@
-name: 'Secret Scanning Report'
-description: 'Generates a secret scanning report for a GitHub repository.'
+name: 'Fetch and Report GitHub Data'
+description: 'Fetches GitHub data and reports in the Actions summary'
 inputs:
   org_name:
     description: 'GitHub organization name'
@@ -8,8 +8,9 @@ inputs:
     description: 'GitHub repository name'
     required: true
   github_token:
-    description: 'GitHub personal access token'
+    description: 'GitHub token for authentication'
     required: true
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -17,3 +18,4 @@ runs:
     INPUT_ORG_NAME: ${{ inputs.org_name }}
     INPUT_REPO_NAME: ${{ inputs.repo_name }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+    GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
