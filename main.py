@@ -59,10 +59,12 @@ def generate_markdown_summary(org_name, repo_name, alerts, org_owners, repo_admi
         "| ---- | ------------- | ---------- | ----------- | ------------ | ----------- | ----- | --------- |"
     ]
     for index, alert in enumerate(alerts, start=1):
+        org_owners_str = ', '.join([f"{o['login']} ({o['email']})" for o in org_owners if o['email']])
+        repo_admins_str = ', '.join([f"{a['login']} ({a['email']})" for a in repo_admins if a['email']])
         markdown_lines.append(
             f"| {index} | {org_name}/{repo_name} | "
-            f"{', '.join([f'{o['login']} ({o['email']})' for o in org_owners if o['email']])} | "
-            f"{', '.join([f'{a['login']} ({a['email']})' for a in repo_admins if a['email']])} | "
+            f"{org_owners_str} | "
+            f"{repo_admins_str} | "
             f"{alert.get('number', 'N/A')} | {alert.get('secret_type', 'Unknown')} | "
             f"{alert.get('state', 'Unknown')} | [Link]({alert.get('html_url', 'URL Not Available')}) |"
         )
