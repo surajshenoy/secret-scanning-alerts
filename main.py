@@ -35,18 +35,18 @@ def fetch_user_details(users):
             user_data = response.json()
             user_details.append({
                 'login': user_data.get('login'),
-                'email': user_data.get('email')  # This may be None if the email is not public
+                'email': user_data.get('email')  # May be None if the email is not public
             })
         else:
             print(f'Failed to fetch user details for {user["login"]}: {response.status_code}')
     return user_details
 
 def fetch_org_owners(org_name):
-    owners = fetch_paginated_api_data(f'https://api.github.com/orgs/{org_name}/members?role=admin')
+    owners = fetch_paginated_api_data(f'https://api.github.com/orgs/{org_name}/members?role=admin&per_page=100')
     return fetch_user_details(owners)
 
 def fetch_repo_admins(full_repo_name):
-    admins = fetch_paginated_api_data(f'https://api.github.com/repos/{full_repo_name}/collaborators?permission=admin')
+    admins = fetch_paginated_api_data(f'https://api.github.com/repos/{full_repo_name}/collaborators?affiliation=direct&per_page=100')
     return fetch_user_details(admins)
 
 def fetch_secret_scanning_alerts(full_repo_name):
@@ -59,12 +59,10 @@ def generate_markdown_summary(org_name, repo_name, alerts, org_owners, repo_admi
         "| ---- | ------------- | ---------- | ----------- | ------------ | ----------- | ----- | --------- |"
     ]
     for index, alert in enumerate(alerts, start=1):
-        org_owners_str = ', '.join([f"{o['login']} ({o['email']})" for o in org_owners if o['email']])
-        repo_admins_str = ', '.join([f"{a['login']} ({a['email']})" for a in repo_admins if a['email']])
+        org_owners_str = ', '.join([f"{o['login']} ({o['email'] if o['email'] else 'No email'})" for o in org_owners])
+        repo_admins_str = ', '.join([f"{a['login']} ({a['email'] if a['email'] else 'No email'})" for a in repo_admins])
         markdown_lines.append(
-            f"| {index} | {org_name}/{repo_name} | "
-            f"{org_owners_str} | "
-            f"{repo_admins_str} | "
+            f"| {index} | {org_name}/{repo_name} | {org_owners_str} | {repo_admins_str} | "
             f"{alert.get('number', 'N/A')} | {alert.get('secret_type', 'Unknown')} | "
             f"{alert.get('state', 'Unknown')} | [Link]({alert.get('html_url', 'URL Not Available')}) |"
         )
@@ -82,10 +80,7 @@ def main():
     
     markdown_summary = generate_markdown_summary(ORG_NAME, REPO_NAME, alerts, org_owners, repo_admins)
     
-    # Echo the markdown summary for GitHub Actions to capture
     print(markdown_summary)
-    
-    # Write the markdown summary to a file
     write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
 
 if __name__ == '__main__':
