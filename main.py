@@ -46,6 +46,7 @@ def fetch_org_owners(org_name):
     return fetch_user_details(owners)
 
 def fetch_repo_admins(full_repo_name):
+    # Fetch direct collaborators with admin permissions
     admins = fetch_paginated_api_data(f'https://api.github.com/repos/{full_repo_name}/collaborators?affiliation=direct&per_page=100')
     return fetch_user_details(admins)
 
