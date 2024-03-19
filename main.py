@@ -66,7 +66,7 @@ def main():
     print(markdown_summary)
     
     # Write the markdown summary to a file
-    write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
+    write_markdown_to_file(markdown_summary, "repo-secret_scanning_report.md")
 
 if __name__ == '__main__':
     main()
