@@ -6,10 +6,6 @@ ORG_NAME = os.getenv('INPUT_ORG_NAME')
 REPO_NAME = os.getenv('INPUT_REPO_NAME')
 GITHUB_TOKEN = os.getenv('INPUT_GITHUB_TOKEN')
 
-# Initialize cache
-ORG_OWNERS_CACHE = {}
-REPO_ADMINS_CACHE = {}
-
 headers = {
     'Authorization': f'token {GITHUB_TOKEN}',
     'Accept': 'application/vnd.github.v3+json'
@@ -50,6 +46,7 @@ def fetch_org_owners(org_name):
     return fetch_user_details(owners)
 
 def fetch_repo_admins(full_repo_name):
+    # Fetch direct collaborators with admin permissions
     admins = fetch_paginated_api_data(f'https://api.github.com/repos/{full_repo_name}/collaborators?affiliation=direct&per_page=100')
     return fetch_user_details(admins)
 
@@ -77,24 +74,15 @@ def write_markdown_to_file(content, filename):
         file.write(content)
 
 def main():
-    global ORG_OWNERS_CACHE, REPO_ADMINS_CACHE
     full_repo_name = f'{ORG_NAME}/{REPO_NAME}'
-
-    # Check cache for org owners and repo admins
-    if ORG_NAME in ORG_OWNERS_CACHE:
-        org_owners = ORG_OWNERS_CACHE[ORG_NAME]
-    else:
-        org_owners = fetch_org_owners(ORG_NAME)
-        ORG_OWNERS_CACHE[ORG_NAME] = org_owners
-
-    if full_repo_name in REPO_ADMINS_CACHE:
-        repo_admins = REPO_ADMINS_CACHE[full_repo_name]
-    else:
-        repo_admins = fetch_repo_admins(full_repo_name)
-        REPO_ADMINS_CACHE[full_repo_name] = repo_admins
-
     alerts = fetch_secret_scanning_alerts(full_repo_name)
+    org_owners = fetch_org_owners(ORG_NAME)
+    repo_admins = fetch_repo_admins(full_repo_name)
+    
     markdown_summary = generate_markdown_summary(ORG_NAME, REPO_NAME, alerts, org_owners, repo_admins)
     
     print(markdown_summary)
     write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
+
+if __name__ == '__main__':
+    main()
