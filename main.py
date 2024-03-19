@@ -50,6 +50,10 @@ def generate_markdown_summary(org_name, repo_name, alerts, org_owners, repo_admi
         )
     return "\n".join(markdown_lines)
 
+def write_markdown_to_file(content, filename):
+    with open(filename, 'w') as file:
+        file.write(content)
+
 def main():
     full_repo_name = f'{ORG_NAME}/{REPO_NAME}'
     alerts = fetch_secret_scanning_alerts(full_repo_name)
@@ -60,6 +64,9 @@ def main():
     
     # Echo the markdown summary for GitHub Actions to capture
     print(markdown_summary)
+    
+    # Write the markdown summary to a file
+    write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
 
 if __name__ == '__main__':
     main()
