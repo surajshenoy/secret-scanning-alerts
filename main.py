@@ -84,5 +84,10 @@ def main():
     print(markdown_summary)
     write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
 
+    # List files and capture the output to the environment variable
+    list_files_output = os.popen('ls').read()
+    print(list_files_output)
+    os.environ['GITHUB_STEP_SUMMARY'] = list_files_output
+
 if __name__ == '__main__':
     main()
