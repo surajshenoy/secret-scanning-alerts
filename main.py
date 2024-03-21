@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 # Setup
 ORG_NAME = os.getenv('INPUT_ORG_NAME')
@@ -11,10 +12,13 @@ headers = {
     'Accept': 'application/vnd.github.v3+json'
 }
 
+org_owners_cache = {}  # Cache to store organization owners to avoid repetitive API calls
+
 def fetch_paginated_api_data(url):
     all_data = []
     while url:
         response = requests.get(url, headers=headers)
+        time.sleep(3)  # Introducing a delay of 3 seconds after each API call
         if response.status_code == 200:
             all_data.extend(response.json())
             if 'next' in response.links.keys():
@@ -31,6 +35,7 @@ def fetch_user_details(users):
     for user in users:
         url = f'https://api.github.com/users/{user["login"]}'
         response = requests.get(url, headers=headers)
+        time.sleep(3)  # Introducing a delay of 3 seconds after each API call
         if response.status_code == 200:
             user_data = response.json()
             user_details.append({
@@ -42,8 +47,14 @@ def fetch_user_details(users):
     return user_details
 
 def fetch_org_owners(org_name):
-    owners = fetch_paginated_api_data(f'https://api.github.com/orgs/{org_name}/members?role=admin&per_page=100')
-    return fetch_user_details(owners)
+    global org_owners_cache
+    if org_name in org_owners_cache:
+        return org_owners_cache[org_name]
+    else:
+        owners = fetch_paginated_api_data(f'https://api.github.com/orgs/{org_name}/members?role=admin&per_page=100')
+        org_owners = fetch_user_details(owners)
+        org_owners_cache[org_name] = org_owners
+        return org_owners
 
 def fetch_repo_admins(full_repo_name):
     # Fetch direct collaborators with admin permissions
@@ -60,10 +71,9 @@ def generate_markdown_summary(org_name, repo_name, alerts, org_owners, repo_admi
         "| ---- | ------------- | ---------- | ----------- | ------------ | ----------- | ----- | --------- |"
     ]
     for index, alert in enumerate(alerts, start=1):
-        org_owners_str = ', '.join([f"{o['login']} ({o['email'] if o['email'] else 'No email'})" for o in org_owners])
         repo_admins_str = ', '.join([f"{a['login']} ({a['email'] if a['email'] else 'No email'})" for a in repo_admins])
         markdown_lines.append(
-            f"| {index} | {org_name}/{repo_name} | {org_owners_str} | {repo_admins_str} | "
+            f"| {index} | {org_name}/{repo_name} | {org_owners} | {repo_admins_str} | "
             f"{alert.get('number', 'N/A')} | {alert.get('secret_type', 'Unknown')} | "
             f"{alert.get('state', 'Unknown')} | [Link]({alert.get('html_url', 'URL Not Available')}) |"
         )
@@ -85,4 +95,10 @@ def main():
     write_markdown_to_file(markdown_summary, "secret_scanning_report.md")
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except requests.exceptions.RequestException as e:
+        print("An error occurred:", e)
+        print("Retrying after 60 seconds...")
+        time.sleep(60)
+        main()
