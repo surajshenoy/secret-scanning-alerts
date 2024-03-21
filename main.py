@@ -1,11 +1,16 @@
 import os
 import requests
 import time
+import logging
 
 # Setup
 ORG_NAME = os.getenv('INPUT_ORG_NAME')
 REPO_NAME = os.getenv('INPUT_REPO_NAME')
 GITHUB_TOKEN = os.getenv('INPUT_GITHUB_TOKEN')
+
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 headers = {
     'Authorization': f'token {GITHUB_TOKEN}',
@@ -18,7 +23,8 @@ def fetch_paginated_api_data(url):
     all_data = []
     while url:
         response = requests.get(url, headers=headers)
-        time.sleep(3)  # Introducing a delay of 3 seconds after each API call
+        time.sleep(0.5)  # Introducing a delay of 0.5 seconds after each API call
+        logger.info(f"API response for {url}: {response.status_code}")
         if response.status_code == 200:
             all_data.extend(response.json())
             if 'next' in response.links.keys():
@@ -26,7 +32,7 @@ def fetch_paginated_api_data(url):
             else:
                 url = None
         else:
-            print(f'Failed to fetch data: {response.status_code}')
+            logger.error(f'Failed to fetch data: {response.status_code}')
             break
     return all_data
 
@@ -35,7 +41,8 @@ def fetch_user_details(users):
     for user in users:
         url = f'https://api.github.com/users/{user["login"]}'
         response = requests.get(url, headers=headers)
-        time.sleep(3)  # Introducing a delay of 3 seconds after each API call
+        time.sleep(0.5)  # Introducing a delay of 0.5 seconds after each API call
+        logger.info(f"API response for {url}: {response.status_code}")
         if response.status_code == 200:
             user_data = response.json()
             user_details.append({
@@ -43,7 +50,7 @@ def fetch_user_details(users):
                 'email': user_data.get('email')  # May be None if the email is not public
             })
         else:
-            print(f'Failed to fetch user details for {user["login"]}: {response.status_code}')
+            logger.error(f'Failed to fetch user details for {user["login"]}: {response.status_code}')
     return user_details
 
 def fetch_org_owners(org_name):
@@ -70,10 +77,11 @@ def generate_markdown_summary(org_name, repo_name, alerts, org_owners, repo_admi
         "| S.No | Org/Repo Name | Org Owners | Repo Admins | Alert Number | Secret Type | State | Alert URL |",
         "| ---- | ------------- | ---------- | ----------- | ------------ | ----------- | ----- | --------- |"
     ]
+    org_owners_str = ', '.join([f"{owner['login']} ({owner['email'] if owner['email'] else 'No email'})" for owner in org_owners])
     for index, alert in enumerate(alerts, start=1):
         repo_admins_str = ', '.join([f"{a['login']} ({a['email'] if a['email'] else 'No email'})" for a in repo_admins])
         markdown_lines.append(
-            f"| {index} | {org_name}/{repo_name} | {org_owners} | {repo_admins_str} | "
+            f"| {index} | {org_name}/{repo_name} | {org_owners_str} | {repo_admins_str} | "
             f"{alert.get('number', 'N/A')} | {alert.get('secret_type', 'Unknown')} | "
             f"{alert.get('state', 'Unknown')} | [Link]({alert.get('html_url', 'URL Not Available')}) |"
         )
